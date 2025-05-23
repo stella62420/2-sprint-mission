@@ -17,17 +17,18 @@ class Product {
   return this._price;
  }
 
- set price(minPrice) {
-  if (minPrice > 0){
-    this._price= minPrice;
-  } else {
+  set price(newPrice) {
+   if (newPrice > 0) {
+      this._price = newPrice;
+    } else {
     console.log('가격에 들어가는 숫자는 0보다 커야 합니다.')
+    this._price = 0;    // 유효하지 않는 값이 들어오는 경우 명시적으로 0으로 설정
   }
  }
 
 
-  foavorite() {
-    this.favoriteCount += 2; 
+  favorite() {
+    this.favoriteCount ++; 
   }
 }
 
@@ -37,11 +38,13 @@ class ElectronicProduct extends Product {
   constructor(name, description, price, tags,images, favoriteCount, manufacturer){
     super (name, description, price, tags,images, favoriteCount);
     this.manufacturer = manufacturer;
+    this.recommendedScore = recommendedScore;
   }
 
 
-  favorite() {     
-    this.favoriteCount ++; 
+  favorite() {    
+    this.recommendedScore ++;   //추천점수 1개씩 증가 추가
+    this.favoriteCount ++;      //favoriteCount 1개씩 증가로 변경
   }
 }
 
@@ -50,16 +53,16 @@ class ElectronicProduct extends Product {
 class Article { 
   #createdAt
 
-  constructor(title, content, writer, likeconunt) {
+  constructor(title, content, writer, likecount) {
     this.title = title;
     this.content = content;
     this.writer = writer;
-    this.likeconunt = likeconunt;
+    this.likeCount = likecount;
     this.#createdAt = new Date(); 
   }
 
   like( ){
-    this.likeconunt++; 
+    this.likeCount++;    //likeconunt → likeCount 오타 수정
   }
 }
 
@@ -121,6 +124,7 @@ async function ProductServiceData() {
           tagsArray,
           productData.images,
           productData.favoriteCount,
+          productData.recommendedScore
         );
         products.push(electronicProduct);
       } else {
@@ -154,7 +158,7 @@ async function ProductServiceData() {
     console.log(createdProduct);
     const newProductId = createdProduct._id;
 
-    const fixProduct = await patchProduct(10, { tags: "수정" });
+    const fixProduct = await patchProduct(10, { tags: ["수정"] });   //문자열 -> []배열 변경
     console.log(fixProduct);
 
     const deletedProduct = await deleteProduct(7);
