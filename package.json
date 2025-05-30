@@ -1,18 +1,46 @@
 {
   "name": "codeit",
   "version": "1.0.0",
+  "description": "[x] 1,2차 과제 후 리뷰 수정\r\n  - setter 사용 후 명시적인 초기값 설정\r\n  - favorite()호출 시 1씩 증가, this.favoriteCount ++;을 추가 가전제품의 \r\n  추천제품 추가하여 의미 차이를 명확하게 함\r\n  - likeconunt → likeCount 오타 수정\r\n  - tags 필드 문자열에서 배열 요소로 변경",
+  "keywords": [],
+  "homepage": "https://github.com/stella62420/2-sprint-mission#readme",
+  "bugs": {
+    "url": "https://github.com/stella62420/2-sprint-mission/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stella62420/2-sprint-mission.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
   "main": "main.js",
   "scripts": {
-    "dev": "nodemon main.js"
+    "start": "node ./bin/www",
+    "dev": "nodemon app.js",
+    "seed": "node prisma/seed.js",
+    "prisma:generate": "/home/seulbee/.nvm/versions/node/v22.15.1/bin/npx prisma generate",
+    "prisma:migrate": "/home/seulbee/.nvm/versions/node/v22.15.1/bin/npx prisma migrate dev --name initial_schema"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express": "^5.1.0"
+    "@prisma/client": "^6.8.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "http-errors": "^2.0.0",
+    "jade": "^1.11.0",
+    "migrate": "^2.1.0",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.0",
+    "pg": "^8.16.0",
+    "superstruct": "^2.0.2",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
-    "nodmon": "^3.1.10"
-  },
-  "type": "module"
+    "@prisma/migrate": "^6.8.2",
+    "cross-env": "^7.0.3",
+    "nodemon": "^3.1.10",
+    "prisma": "^6.8.2"
+  }
 }
