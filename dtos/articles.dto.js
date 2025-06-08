@@ -1,4 +1,4 @@
-const { object, string } = require('superstruct');
+const { object, string, optional } = require('superstruct');
 
 const CreateArticleDto = object({
   title: string(),
@@ -6,8 +6,8 @@ const CreateArticleDto = object({
 });
 
 const UpdateArticleDto = object({
-  title: string(),
-  content: string()
+  title: optional(string()),
+  content: optional(string()),
 });
 
 module.exports = {

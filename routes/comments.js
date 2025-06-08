@@ -1,169 +1,158 @@
-
 var express = require('express');
 var router = express.Router({ mergeParams: true });
 const { db } = require('../utils/db');
 const { assert } = require('superstruct');
 const { CreateCommentDto, UpdateCommentDto } = require('../dtos/comments.dto');
 
-const validateCreateComment = (req, res, next) => {
-  try {
-    assert(req.body, CreateCommentDto);
-    next();
-  } catch (error) {
-    console.error('Validation error for creating comment:', error);
-    res.status(400).json({ message: '댓글 생성 요청 데이터 형식이 올바르지 않습니다.' });
-  }
-};
-
-const validateUpdateComment = (req, res, next) => {
-  try {
-    assert(req.body, UpdateCommentDto);
-    next();
-  } catch (error) {
-    console.error('Validation error for updating comment:', error);
-    res.status(400).json({ message: '댓글 수정 요청 데이터 형식이 올바르지 않습니다.' });
-  }
-};
-
-router.route('/')
-  .get(async (req, res) => {
-    const articleId = parseInt(req.params.articleId, 10);
-    const productId = parseInt(req.params.productId, 10);
-
-    let whereCondition = {};
-    if (!isNaN(articleId)) {
-      whereCondition.articleId = articleId;
-    } else if (!isNaN(productId)) {
-      whereCondition.productId = productId;
-    } else {
-      return res.status(400).json({ message: '유효한 게시글 ID 또는 상품 ID가 필요합니다.' });
-    }
-
+router.get('/', async (req, res, next) => {
     try {
-      const comments = await db.comment.findMany({ where: whereCondition });
-      console.log(`Fetched ${comments.length} comments for parent ID: ${articleId || productId}.`);
-      res.json(comments);
+        const parentId = req.params.articleId || req.params.productId;
+
+        let comments;
+        if (req.params.articleId) {
+            comments = await db.comment.findMany({
+                where: { articleId: parseInt(req.params.articleId) },
+                orderBy: { createdAt: 'desc' },
+            });
+        } else if (req.params.productId) {
+            comments = await db.comment.findMany({
+                where: { productId: parseInt(req.params.productId) },
+                orderBy: { createdAt: 'desc' },
+            });
+        } else {
+            return res.status(400).json({ message: 'Invalid parent type.' });
+        }
+
+        res.status(200).json({ comments });
     } catch (error) {
-      console.error('Error fetching comments:', error);
-      res.status(500).json({ message: '댓글 조회에 실패했습니다.' });
+        next(error);
     }
-  })
-  .post(validateCreateComment, async (req, res) => {
-    const articleId = parseInt(req.params.articleId, 10);
-    const productId = parseInt(req.params.productId, 10);
-    const { content } = req.body;
+});
 
-    if (isNaN(articleId) && isNaN(productId)) {
-      return res.status(400).json({ message: '유효한 게시글 ID 또는 상품 ID가 필요합니다.' });
-    }
-
+router.post('/', async (req, res, next) => {
     try {
-      let newComment;
-      if (!isNaN(articleId)) {
-        newComment = await db.comment.create({ data: { content, articleId } });
-      } else {
-        newComment = await db.comment.create({ data: { content, productId } });
-      }
+        const { content } = req.body;
 
-      console.log(`Comment created: ${newComment.id} for parent ID: ${articleId || productId}.`);
-      res.status(201).json(newComment);
+        const parentId = req.params.articleId || req.params.productId;
+        let newComment;
+        if (req.params.articleId) {
+            newComment = await db.comment.create({
+                data: {
+                    content,
+                    article: {
+                        connect: { id: parseInt(req.params.articleId) }
+                    }
+                }
+            });
+        } else if (req.params.productId) {
+            newComment = await db.comment.create({
+                data: {
+                    content,
+                    product: {
+                        connect: { id: parseInt(req.params.productId) }
+                    }
+                }
+            });
+        } else {
+            return res.status(400).json({ message: 'Invalid parent type.' });
+        }
+
+        res.status(201).json({ comment: newComment, message: '댓글이 성공적으로 생성되었습니다.' });
     } catch (error) {
-      console.error('Error creating comment:', error);
-      res.status(500).json({ message: '댓글 등록에 실패했습니다.' });
+        next(error);
     }
-  });
+});
 
-router.route('/:id')
-  .get(async (req, res) => {
-    const commentId = parseInt(req.params.id, 10);
-    const articleId = parseInt(req.params.articleId, 10);
-    const productId = parseInt(req.params.productId, 10);
-
-    if (isNaN(commentId)) {
-      return res.status(400).json({ message: '유효하지 않은 댓글 ID입니다.' });
-    }
-
-    let whereCondition = { id: commentId };
-    if (!isNaN(articleId)) {
-     whereCondition.articleId = articleId;
-    } else if (!isNaN(productId)) { // productId 조건 추가
-      whereCondition.productId = productId;
-    } else {
-        return res.status(400).json({ message: '유효한 게시글 ID 또는 상품 ID가 필요합니다.' }); // 부모 ID 없을 때 에러 처리
-    }
-
+router.get('/:commentId', async (req, res, next) => {
     try {
-      const comment = await db.comment.findUnique({ where: whereCondition });
-      if (!comment) {
-      return res.status(404).json({ message: '댓글을 찾을 수 없습니다.' });
-      }
-      res.json(comment);
+        const { commentId } = req.params;
+        const parentId = req.params.articleId || req.params.productId;
+        const comment = await db.comment.findUnique({
+            where: {
+                id: parseInt(commentId)
+            }
+        });
+
+        if (!comment) {
+            return res.status(404).json({ message: '댓글을 찾을 수 없습니다.' });
+        }
+
+        if (req.params.articleId && comment.articleId !== parseInt(req.params.articleId)) {
+            return res.status(404).json({ message: '이 게시글의 댓글이 아닙니다.' });
+        }
+        if (req.params.productId && comment.productId !== parseInt(req.params.productId)) {
+            return res.status(404).json({ message: '이 상품의 댓글이 아닙니다.' });
+        }
+
+        res.status(200).json({ comment });
     } catch (error) {
-      console.error('Error fetching comment by ID:', error);
-      res.status(500).json({ message: '댓글 조회에 실패했습니다.' });
+        next(error);
     }
-  })
-  .patch(validateUpdateComment, async (req, res) => {
-    const commentId = parseInt(req.params.id, 10);
-    const articleId = parseInt(req.params.articleId, 10);
-    const productId = parseInt(req.params.productId, 10);
-    const updateData = req.body;
+});
 
-    if (isNaN(commentId)) {
-     return res.status(400).json({ message: '유효하지 않은 댓글 ID입니다.' });
-   }
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: '수정할 내용이 없습니다.' });
-    }
-
-    let whereCondition = { id: commentId };
-     if (!isNaN(articleId)) {
-      whereCondition.articleId = articleId;
-    } else if (!isNaN(productId)) {
-      whereCondition.productId = productId;
-    } else {
-        return res.status(400).json({ message: '유효한 게시글 ID 또는 상품 ID가 필요합니다.' });
-    }
-
+router.patch('/:commentId', async (req, res, next) => {
     try {
-      const updatedComment = await db.comment.update({ where: whereCondition, data: updateData });
-      res.json(updatedComment);
+        assert(req.body, UpdateCommentDto);
+        const { content } = req.body;
+        const { commentId } = req.params;
+        const parentId = req.params.articleId || req.params.productId;
+        if (Object.keys(req.body).length === 0) {
+            return res.status(400).json({ message: '수정할 내용이 없습니다.' });
+        }
+        const existingComment = await db.comment.findUnique({
+            where: { id: parseInt(commentId) }
+        });
+
+        if (!existingComment) {
+            return res.status(404).json({ message: '댓글을 찾을 수 없습니다.' });
+        }
+
+        if (req.params.articleId && existingComment.articleId !== parseInt(req.params.articleId)) {
+            return res.status(404).json({ message: '이 게시글의 댓글이 아닙니다.' });
+        }
+        if (req.params.productId && existingComment.productId !== parseInt(req.params.productId)) {
+            return res.status(404).json({ message: '이 상품의 댓글이 아닙니다.' });
+        }
+
+        const updatedComment = await db.comment.update({
+            where: { id: parseInt(commentId) },
+            data: { content }
+        });
+
+        res.status(200).json({ comment: updatedComment, message: '댓글이 성공적으로 수정되었습니다.' });
     } catch (error) {
-     console.error('Error updating comment:', error);
-      if (error.code === 'P2025') {
-        return res.status(404).json({ message: '댓글을 찾을 수 없습니다.' });
-      }
-      res.status(500).json({ message: '댓글 수정에 실패했습니다.' });
+        next(error);
     }
-  })
-  .delete(async (req, res) => {
-    const commentId = parseInt(req.params.id, 10);
-    const articleId = parseInt(req.params.articleId, 10);
-    const productId = parseInt(req.params.productId, 10);
+});
 
-    if (isNaN(commentId)) {
-       return res.status(400).json({ message: '유효하지 않은 댓글 ID입니다.' });
-     }
-
-    let whereCondition = { id: commentId };
-    if (!isNaN(articleId)) {
-      whereCondition.articleId = articleId;
-    } else if (!isNaN(productId)) {
-      whereCondition.productId = productId;
-    } else {
-        return res.status(400).json({ message: '유효한 게시글 ID 또는 상품 ID가 필요합니다.' });
-    }
-
+router.delete('/:commentId', async (req, res, next) => {
     try {
-      await db.comment.delete({ where: whereCondition });
-      res.status(204).send();
+        const { commentId } = req.params;
+        const parentId = req.params.articleId || req.params.productId;
+
+        const existingComment = await db.comment.findUnique({
+            where: { id: parseInt(commentId) }
+        });
+
+        if (!existingComment) {
+            return res.status(404).json({ message: '댓글을 찾을 수 없습니다.' });
+        }
+
+        if (req.params.articleId && existingComment.articleId !== parseInt(req.params.articleId)) {
+            return res.status(404).json({ message: '이 게시글의 댓글이 아닙니다.' });
+        }
+        if (req.params.productId && existingComment.productId !== parseInt(req.params.productId)) {
+            return res.status(404).json({ message: '이 상품의 댓글이 아닙니다.' });
+        }
+
+        await db.comment.delete({
+            where: { id: parseInt(commentId) }
+        });
+
+        res.status(204).send();
     } catch (error) {
-      console.error('Error deleting comment:', error);
-      if (error.code === 'P2025') {
-        return res.status(404).json({ message: '댓글을 찾을 수 없습니다.' });
-      }
-      res.status(500).json({ message: '댓글 삭제에 실패했습니다.' });
+        next(error);
     }
-  });
+});
 
 module.exports = router;

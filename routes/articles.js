@@ -3,14 +3,15 @@ var router = express.Router();
 const { db } = require('../utils/db');
 const { assert } = require('superstruct');
 const { CreateArticleDto, UpdateArticleDto } = require('../dtos/articles.dto');
+const commentsRouter = require('./comments');
 
 const validateCreateArticle = (req, res, next) => {
   try {
     assert(req.body, CreateArticleDto);
     next();
   } catch (error) {
-    console.error('Validation error for creating article:', error);
-    res.status(400).json({ message: '게시글 생성 요청 데이터 형식이 올바르지 않습니다.' });
+    error.status = 400;
+    next(error);
   }
 };
 
@@ -19,91 +20,111 @@ const validateUpdateArticle = (req, res, next) => {
     assert(req.body, UpdateArticleDto);
     next();
   } catch (error) {
-    console.error('Validation error for updating article:', error);
-    res.status(400).json({ message: '게시글 수정 요청 데이터 형식이 올바르지 않습니다.' });
+    error.status = 400;
+    next(error);
   }
 };
 
-
 router.route('/')
-  .get(async (req, res) => { 
+  .get(async (req, res, next) => {
     try {
-      const articles = await db.article.findMany();
-      console.log(`Fetched articles.`);
+      const articles = await db.article.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
       res.json(articles);
     } catch (error) {
-      console.error('Error fetching articles:', error);
-      res.status(500).json({ message: '게시글 조회에 실패했습니다.' });
+      next(error);
     }
   })
-  .post(validateCreateArticle, async (req, res) => {
+  .post(validateCreateArticle, async (req, res, next) => {
     try {
       const { title, content } = req.body;
       const newArticle = await db.article.create({ data: { title, content } });
       console.log(`Article created: ${newArticle.id}`);
       res.status(201).json(newArticle);
     } catch (error) {
-      console.error('Error creating article:', error);
-      res.status(500).json({ message: '게시글 등록에 실패했습니다.' });
+      next(error);
     }
   });
 
-
-router.route('/:id') 
-  .get(async (req, res) => {
+router.route('/:id')
+  .get(async (req, res, next) => {
     const { id } = req.params;
     const parsedId = parseInt(id, 10);
+
     if (isNaN(parsedId)) {
-      return res.status(400).json({ message: '유효하지 않은 게시글 ID입니다.' });
+      const error = new Error('유효하지 않은 게시글 ID입니다.');
+      error.status = 400;
+      return next(error);
     }
+
     try {
       const article = await db.article.findUnique({ where: { id: parsedId } });
       if (!article) {
-        return res.status(404).json({ message: '게시글을 찾을 수 없습니다.' });
+        const error = new Error('게시글을 찾을 수 없습니다.');
+        error.status = 404;
+        return next(error);
       }
       res.json(article);
     } catch (error) {
-      console.error('Error fetching article by ID:', error);
-      res.status(500).json({ message: '게시글 조회에 실패했습니다.' });
+      next(error);
     }
   })
-  .patch(validateUpdateArticle, async (req, res) => {
+  .patch(validateUpdateArticle, async (req, res, next) => {
     const { id } = req.params;
     const parsedId = parseInt(id, 10);
+
     if (isNaN(parsedId)) {
-      return res.status(400).json({ message: '유효하지 않은 게시글 ID입니다.' });
+      const error = new Error('유효하지 않은 게시글 ID입니다.');
+      error.status = 400;
+      return next(error);
     }
+
     try {
       const updateData = req.body;
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ message: '수정할 내용이 없습니다.' });
+        const error = new Error('수정할 내용이 없습니다.');
+        error.status = 400;
+        return next(error);
       }
-      const updatedArticle = await db.article.update({ where: { id: parsedId }, data: updateData });
+
+      const updatedArticle = await db.article.update({
+        where: { id: parsedId },
+        data: updateData
+      });
       res.json(updatedArticle);
     } catch (error) {
-      console.error('Error updating article:', error);
       if (error.code === 'P2025') {
-        return res.status(404).json({ message: '게시글을 찾을 수 없습니다.' });
+        const notFoundError = new Error('게시글을 찾을 수 없습니다.');
+        notFoundError.status = 404;
+        return next(notFoundError);
       }
-      res.status(500).json({ message: '게시글 수정에 실패했습니다.' });
+      next(error);
     }
   })
-  .delete(async (req, res) => {
+  .delete(async (req, res, next) => {
     const { id } = req.params;
     const parsedId = parseInt(id, 10);
+
     if (isNaN(parsedId)) {
-      return res.status(400).json({ message: '유효하지 않은 게시글 ID입니다.' });
+      const error = new Error('유효하지 않은 게시글 ID입니다.');
+      error.status = 400;
+      return next(error);
     }
+
     try {
       await db.article.delete({ where: { id: parsedId } });
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting article:', error);
       if (error.code === 'P2025') {
-        return res.status(404).json({ message: '게시글을 찾을 수 없습니다.' });
+        const notFoundError = new Error('게시글을 찾을 수 없습니다.');
+        notFoundError.status = 404;
+        return next(notFoundError);
       }
-      res.status(500).json({ message: '게시글 삭제에 실패했습니다.' });
+      next(error);
     }
   });
+
+router.use('/:articleId/comments', commentsRouter);
 
 module.exports = router;

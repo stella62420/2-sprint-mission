@@ -12,7 +12,6 @@ class Product {
     this.favoriteCount = favoriteCount;
   }
 
- 
  get price() {    
   return this._price;
  }
@@ -28,19 +27,16 @@ class Product {
 
 
   favorite() {
-    this.favoriteCount ++; 
+    this.favoriteCount ++;
   }
 }
 
-
-
-class ElectronicProduct extends Product { 
+class ElectronicProduct extends Product {
   constructor(name, description, price, tags,images, favoriteCount, manufacturer){
     super (name, description, price, tags,images, favoriteCount);
     this.manufacturer = manufacturer;
     this.recommendedScore = recommendedScore;
   }
-
 
   favorite() {    
     this.recommendedScore ++;   //추천점수 1개씩 증가 추가
@@ -48,24 +44,20 @@ class ElectronicProduct extends Product {
   }
 }
 
-
-
-class Article { 
+class Article {
   #createdAt
-
   constructor(title, content, writer, likecount) {
     this.title = title;
     this.content = content;
     this.writer = writer;
     this.likeCount = likecount;
-    this.#createdAt = new Date(); 
+    this.#createdAt = new Date();
   }
 
   like( ){
     this.likeCount++;    //likeconunt → likeCount 오타 수정
   }
 }
-
 
 const articleData = {
   title: "게시글 제목입니다.",
@@ -77,7 +69,7 @@ function ArticleServiceData() {
   getArticleList({ page: 10, pageSize: 10, keyword: '제목' })
     .then(articleListWithKeyword => {
       console.log(articleListWithKeyword);
-      return getArticle(436); 
+      return getArticle(436);
     })
     .then(singleArticle => {
       console.log(singleArticle);
@@ -85,34 +77,32 @@ function ArticleServiceData() {
     })
     .then(newArticle => {
       console.log(newArticle);
-      return patchArticle(437, { title: "수정" }); 
+      return patchArticle(437, { title: "수정" });
     })
+
     .then(fixArticle => {
       console.log(fixArticle);
-      return deleteArticle(439); 
+      return deleteArticle(439);
     })
+
     .then(deletArticle => {
       console.log(deletArticle);
     })
+
     .catch(error => {
       console.log('게시글 관련 작업 중 오류가 발생했습니다');
       console.error(error);
     });
 }
-
 ArticleServiceData();
-
-
 
 
 async function ProductServiceData() {
   try {
     const response = await getProductList({ page: 1, pageSize: 10, keyword: '제품' });
     console.log(response);
-
     const productList = response.list;
     console.log(productList);
-
     const products = [];
     for (const productData of productList) {
       const tagsArray = Array.isArray(productData.tags) ? productData.tags : [];
@@ -126,6 +116,7 @@ async function ProductServiceData() {
           productData.favoriteCount,
           productData.recommendedScore
         );
+
         products.push(electronicProduct);
       } else {
         const product = new Product(
@@ -142,8 +133,8 @@ async function ProductServiceData() {
 
     console.log(products);
 
-
     const singleProduct = await getProduct(10);
+
     console.log(singleProduct);
 
     const newProductData = {
@@ -157,10 +148,8 @@ async function ProductServiceData() {
     const createdProduct = await createProduct(newProductData);
     console.log(createdProduct);
     const newProductId = createdProduct._id;
-
     const fixProduct = await patchProduct(10, { tags: ["수정"] });   //문자열 -> []배열 변경
     console.log(fixProduct);
-
     const deletedProduct = await deleteProduct(7);
     console.log(deletedProduct);
 
@@ -168,5 +157,6 @@ async function ProductServiceData() {
     console.error('상품 관련 작업 중 오류가 발생 했습니다.:', error);
   }
 }
+
 
 ProductServiceData();
