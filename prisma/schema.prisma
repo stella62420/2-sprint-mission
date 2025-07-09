@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id              Int              @id @default(autoincrement())
-  email           String           @unique
-  nickname        String           @unique
-  image           String?
-  password        String
-  refreshToken    String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  nickname     String   @unique
+  image        String?
+  password     String
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt @default(now())
+
   Articles        Article[]        @relation("UserArticles")
   Products        Product[]
   Comments        Comment[]        @relation("UserComments")
@@ -31,48 +26,45 @@ model User {
 }
 
 model Article {
-  id       Int           @id @default(autoincrement())
-  title    String
-  content  String
-  userId   Int
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  image     String?
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+
   user     User          @relation("UserArticles", fields: [userId], references: [id])
   comments Comment[]
   Likes    ArticleLike[]
 }
 
 model Product {
-  id              Int              @id @default(autoincrement())
-  title           String
-  description     String
-  price           Int
-  category        String?
-  images          String[]
-  userId          Int 
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  price       Int
+  category    String?
+  images      String[]
+  userId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+
   seller          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   ProductComments ProductComment[]
-  Likes           ProductLike[] 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  Likes           ProductLike[]
 }
 
 model Comment {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   content   String
   articleId Int
   userId    Int
-  user      User    @relation("UserComments", fields: [userId], references: [id])
-  article   Article @relation(fields: [articleId], references: [id])
-}
-
-model ProductLike {
-  id        Int      @id @default(autoincrement())
-  productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 
-  @@unique([productId, userId])
+  user    User    @relation("UserComments", fields: [userId], references: [id])
+  article Article @relation(fields: [articleId], references: [id])
 }
 
 model ProductComment {
@@ -81,10 +73,22 @@ model ProductComment {
   productId Int
   userId    Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @default(now())
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProductLike {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
 }
 
 model ArticleLike {

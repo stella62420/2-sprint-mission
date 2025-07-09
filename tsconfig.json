@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".", 
+    "paths": {
+      "@lib/*": ["src/lib/*"],
+      "@errors/*": ["src/lib/errors/*"],
+      "@middlewares/*": ["src/middleware/*"],
+      "@articles/*": ["src/articles/*"],
+      "@auth/*": ["src/auth/*"],
+      "@users/*": ["src/users/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "allowJs": false
+}
