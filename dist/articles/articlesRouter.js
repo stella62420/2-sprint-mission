@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const withAsync_1 = require("../lib/withAsync");
+const auth_1 = require("../middleware/auth");
+const articlesController_1 = require("../articles/articlesController");
+const router = (0, express_1.Router)();
+router.post('/', auth_1.authenticateUser, (0, withAsync_1.withAsync)(articlesController_1.createArticle));
+router.get('/', (0, withAsync_1.withAsync)(articlesController_1.getArticleList));
+router.get('/:id', (0, withAsync_1.withAsync)(articlesController_1.getArticle));
+router.patch('/:id', auth_1.authenticateUser, (0, withAsync_1.withAsync)(articlesController_1.updateArticle));
+router.delete('/:id', auth_1.authenticateUser, (0, withAsync_1.withAsync)(articlesController_1.deleteArticle));
+router.post('/:id/comments', auth_1.authenticateUser, (0, withAsync_1.withAsync)(articlesController_1.createComment));
+router.get('/:id/comments', (0, withAsync_1.withAsync)(articlesController_1.getCommentList));
+router.post('/:id/like', auth_1.authenticateUser, (0, withAsync_1.withAsync)(articlesController_1.addArticleLike));
+router.delete('/:id/like', auth_1.authenticateUser, (0, withAsync_1.withAsync)(articlesController_1.removeArticleLike));
+exports.default = router;

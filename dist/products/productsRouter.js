@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const withAsync_1 = require("../lib/withAsync");
+const productsController_1 = require("../products/productsController");
+const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
+const productsStruct_1 = require("../products/productsStruct");
+const commentsStruct_1 = require("../comments/commentsStruct");
+const commonStructs_1 = require("../lib/commonStructs");
+const auth_2 = require("../middleware/auth");
+const productsRouter = express_1.default.Router();
+productsRouter.post('/', auth_1.authenticateUser, (0, validation_1.validate)('body', productsStruct_1.CreateProductBodyStruct), auth_2.optionalAuthenticateUser, (0, withAsync_1.withAsync)(productsController_1.createProduct));
+productsRouter.get('/:id', (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), auth_1.authenticateUser, (0, withAsync_1.withAsync)(productsController_1.getProduct));
+productsRouter.patch('/:id', auth_1.authenticateUser, (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), (0, validation_1.validate)('body', productsStruct_1.UpdateProductBodyStruct), (0, withAsync_1.withAsync)(productsController_1.updateProduct));
+productsRouter.delete('/:id', auth_1.authenticateUser, (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), (0, withAsync_1.withAsync)(productsController_1.deleteProduct));
+productsRouter.get('/', (0, validation_1.validate)('query', productsStruct_1.GetProductListParamsStruct), auth_1.authenticateUser, (0, withAsync_1.withAsync)(productsController_1.getProductList));
+productsRouter.post('/:id/comments', auth_1.authenticateUser, (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), (0, validation_1.validate)('body', commentsStruct_1.CreateCommentBodyStruct), (0, withAsync_1.withAsync)(productsController_1.createComment));
+productsRouter.get('/:id/comments', (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), (0, validation_1.validate)('query', commentsStruct_1.GetCommentListParamsStruct), (0, withAsync_1.withAsync)(productsController_1.getCommentList));
+productsRouter.post('/:id/likes', auth_1.authenticateUser, (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), (0, withAsync_1.withAsync)(productsController_1.addProductLike));
+productsRouter.delete('/:id/likes', auth_1.authenticateUser, (0, validation_1.validate)('params', commonStructs_1.IdParamsStruct), (0, withAsync_1.withAsync)(productsController_1.removeProductLike));
+exports.default = productsRouter;
